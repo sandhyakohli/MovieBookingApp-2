@@ -74,9 +74,49 @@ async function logout(req, res) {
       res.status(500).send(err.message);
     });
 }
+async function getCouponCode(req, res) {
+  const accesstoken = req.header["Authorization"].split(" ")[1];
+  if (!uuid) {
+    return res.status(401).send("user not logged in");
+  }
+  try {
+    const users = await User.find({ accesstoken: accesstoken });
+    if (users[0].coupens) {
+      res.send(users[0].coupens);
+    } else {
+      res.send([]);
+    }
+  } catch (err) {
+    return res.status(500).send(err.message || "user not found");
+  }
+}
+
+async function bookShow(req, res) {
+  try {
+    const accessToken = req.header["Authorization"].split(" ")[1];
+    if (!accessToken) throw new Error("user not logged in");
+    const uuid = req.body.uuid;
+    const bookingRequest = req.body.bookingRequest;
+    User.findOneAndUpdate(
+      { uuid: uuid },
+      { $push: { bookingRequests: bookingRequest } }
+    )
+      .then((data) => {
+        if (!data) throw new Error("unable to book show");
+        res.status(200).send(bookingRequest);
+      })
+      .catch((err) => {
+        res.status(500).send(err.message || "unable to book show");
+      });
+  } catch (err) {
+    res.status(500).send(err.message || "unable to book show");
+  }
+}
 
 module.exports = {
   signUp,
   login,
   logout,
+  getCouponCode,
+  bookShow,
 };
